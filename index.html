@@ -65,6 +65,7 @@
   .sum.em .a { white-space: normal; overflow: visible; word-break: keep-all; overflow-wrap: anywhere; }
   .list .lh { padding: 8px 12px 4px; font-size: 12px; color: var(--sub); border-bottom: 1px solid #eee; }
   .list button.all { text-align: center; color: var(--pri); font-weight: 600; }
+  .credit { text-align: center; font-size: 11px; color: #9aa0a6; margin: 18px 0 0; }
 </style>
 </head>
 <body>
@@ -174,7 +175,8 @@ function showLink() {
 
 // ---------- 화면 ----------
 function renderShell() {
-  $('app').innerHTML = '<div id="form"></div><div id="recent"></div>';
+  // 제작자 표시는 본인 확인 뒤 서버에서 받음(깃허브 화면 파일에는 이름이 없음)
+  $('app').innerHTML = '<div id="form"></div><div id="recent"></div>' + (D.credit ? '<div class="credit">' + esc(D.credit) + '</div>' : '');
   render(); renderRecent();
 }
 function choices(key, opts, col, sub) {
