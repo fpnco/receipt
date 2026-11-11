@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>영수증 제출</title>
+<script src="config.js"></script>
+<style>
+  :root { --ink: #1f2328; --sub: #5f6368; --line: #dadce0; --bg: #f6f7f9; --card: #fff; --pri: #1F3A5F; --pri2: #e8eef6; --ok: #137333; --err: #c5221f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; color: var(--ink); background: var(--bg); font-size: 16px; line-height: 1.45; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--pri); color: #fff; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+  header b { font-size: 17px; }
+  header .who { font-size: 13px; opacity: .9; }
+  header button { background: transparent; border: 1px solid rgba(255,255,255,.5); color: #fff; border-radius: 14px; padding: 3px 9px; font-size: 12px; margin-left: 6px; }
+  main { max-width: 560px; margin: 0 auto; padding: 12px 12px 60px; }
+  .blk { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 10px 0; }
+  .blk h3 { margin: 0 0 10px; font-size: 16px; }
+  .blk h3 .req { color: var(--err); font-weight: normal; font-size: 13px; margin-left: 4px; }
+  .hint { color: var(--sub); font-size: 13px; margin-top: 8px; white-space: pre-line; }
+  .ch { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ch.col { flex-direction: column; }
+  .ch button { flex: 1 1 auto; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); background: #fff; border-radius: 10px; font-size: 15px; color: var(--ink); text-align: left; }
+  .ch:not(.col) button { text-align: center; }
+  .ch button.on { border-color: var(--pri); background: var(--pri2); font-weight: 600; box-shadow: inset 0 0 0 1px var(--pri); }
+  .ch .sec { width: 100%; font-size: 12px; color: var(--sub); margin: 6px 2px 0; }
+  label.f { display: block; font-size: 14px; margin: 10px 0 4px; }
+  input[type=text], input[type=email], input[type=tel], textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 16px; background: #fff; }
+  textarea { min-height: 70px; resize: vertical; }
+  .slot { display: flex; flex-wrap: wrap; gap: 8px; }
+  .th { position: relative; width: 86px; height: 86px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #eef0f3; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--sub); text-align: center; }
+  .th img { width: 100%; height: 100%; object-fit: cover; }
+  .th .st { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 2px; }
+  .th .st.err { background: var(--err); }
+  .th .x { position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 12px; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; line-height: 24px; padding: 0; }
+  .add { width: 86px; height: 86px; border-radius: 10px; border: 2px dashed #b0b6be; display: flex; align-items: center; justify-content: center; flex-direction: column; color: var(--pri); font-size: 13px; cursor: pointer; background: #fff; }
+  .add b { font-size: 26px; line-height: 26px; }
+  .search { margin-bottom: 8px; }
+  .list { max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
+  .list button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eee; background: #fff; padding: 11px 12px; font-size: 15px; }
+  .list button.on { background: var(--pri2); font-weight: 600; }
+  .pri { width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: var(--pri); color: #fff; font-size: 17px; font-weight: 600; margin-top: 10px; }
+  .pri:disabled { background: #9aa0a6; }
+  .sec-btn { width: 100%; min-height: 44px; border: 1px solid var(--pri); border-radius: 12px; background: #fff; color: var(--pri); font-size: 15px; margin-top: 8px; }
+  .msg { margin-top: 10px; font-size: 14px; }
+  .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
+  .done { text-align: center; padding: 26px 14px; }
+  .done .no { font-size: 22px; font-weight: 700; margin: 6px 0; }
+  table.rc { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.rc td { border-bottom: 1px solid #eee; padding: 6px 4px; vertical-align: top; }
+  table.rc td:last-child { text-align: right; white-space: nowrap; }
+  .link { word-break: break-all; font-size: 12px; background: #f1f3f4; border-radius: 8px; padding: 8px; user-select: all; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #c9d2e3; border-top-color: var(--pri); border-radius: 50%; animation: sp 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .hidden { display: none; }
+  .blk { scroll-margin-top: 70px; }
+  .sum { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin: 6px 0; font-size: 14px; }
+  .sum .q { color: var(--sub); flex: 0 0 auto; min-width: 74px; }
+  .sum .a { flex: 1 1 auto; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sum button { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 3px 10px; font-size: 13px; color: var(--pri); }
+  .blk.cur { border-color: var(--pri); box-shadow: 0 0 0 2px var(--pri2); }
+</style>
+</head>
+<body>
+<div id="initk" data-k="" hidden></div>
+<header>
+  <div><b>영수증 제출</b><div class="who" id="who"></div></div>
+  <div id="hbtn"></div>
+</header>
+<main id="app"><div class="blk"><span class="spin"></span>불러오는 중…</div></main>
+
+<script>
+// 바깥 페이지(깃허브 페이지)로 쓸 때만 웹앱 주소(…/exec)를 넣음. 웹앱 안에서 열리면 비워 둠
+var API_URL = String(window.RECEIPT_API_URL || '').trim(); // config.js에서 읽음
+var TOKEN = '', D = null, S = null, LID = 0;
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function won(n) { return n == null || n === '' ? '' : Number(n).toLocaleString('ko-KR'); }
+function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
+function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function call(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  var fail = function (rej) { return function (e) {
+    var m = String((e && e.message) || e);
+    if (/AUTH:/.test(m)) { logout(m.replace(/^.*AUTH:\s*/, '')); }
+    rej(new Error(m.replace(/^Exception:\s*/, '').replace(/^.*AUTH:\s*/, '')));
+  }; };
+  return new Promise(function (res, rej) {
+    if (window.google && google.script && google.script.run) {
+      var r = google.script.run.withSuccessHandler(res).withFailureHandler(fail(rej));
+      r[fn].apply(r, args); return;
+    }
+    // 바깥 페이지: 구글 로그인 쿠키 없이 웹앱 입구(doPost)를 부름 — 머리글을 붙이지 않아야 바로 통과
+    if (!/^https:\/\/script\.google\.com\//.test(API_URL)) { rej(new Error('관리자가 이 페이지에 웹앱 주소를 아직 넣지 않았어요.')); return; }
+    fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }) })
+      .then(function (x) { return x.json(); })
+      .then(function (o) { if (o && o.err !== undefined) fail(rej)(new Error(o.err)); else res(o ? o.ok : null); })
+      .catch(function () { fail(rej)(new Error('연결이 잠시 끊겼어요. 다시 시도해 주세요.')); });
+  });
+}
+function blank() {
+  return { kind: '', pay: '', card: '', shop: '', group: '', cat: '', fields: {}, use: '', ksite: '', site: '', place: '', siteQ: '', memo: '',
+    files: { receipt: [], order: [], transfer: [], photo: [] }, sending: false, edit: '', fieldsOk: false };
+}
+
+// ---------- 시작·본인 확인 ----------
+function start() {
+  var k = ($('initk').getAttribute('data-k') || '').trim();
+  if (!k) { var m = /[#&?]k=([^&#]+)/.exec(location.hash) || /[?&]k=([^&#]+)/.exec(location.search); if (m) { try { k = decodeURIComponent(m[1]).trim(); } catch (e) { } } }
+  if (k) store('rc_token', k);
+  TOKEN = k || load('rc_token');
+  if (!TOKEN) return showAuth('');
+  loadApp();
+}
+function loadApp() {
+  $('app').innerHTML = '<div class="blk"><span class="spin"></span>불러오는 중…</div>';
+  call('getAppData', TOKEN).then(function (d) {
+    D = d; S = blank();
+    $('who').textContent = d.me.name + '님' + (d.me.team ? ' · ' + d.me.team : '');
+    $('hbtn').innerHTML = '<button id="b-link">내 전용 링크</button><button id="b-out">다른 사람</button>';
+    $('b-link').onclick = showLink; $('b-out').onclick = function () { if (confirm('본인 확인을 지우고 다시 할까요?')) logout(''); };
+    renderShell();
+  }).catch(function (e) { if (TOKEN) $('app').innerHTML = '<div class="blk msg err">' + esc(e.message) + '</div><button class="sec-btn" onclick="loadApp()">다시 시도</button>'; });
+}
+function logout(msg) { TOKEN = ''; store('rc_token', null); D = null; $('who').textContent = ''; $('hbtn').innerHTML = ''; showAuth(msg); }
+function showAuth(msg) {
+  $('app').innerHTML =
+    '<div class="blk"><h3>본인 확인</h3>' +
+    '<div class="hint" style="margin-top:0">처음 한 번만 해요. 회사 이메일로 인증번호를 보내드려요.</div>' +
+    (msg ? '<div class="msg err">' + esc(msg) + '</div>' : '') +
+    '<label class="f">회사 이메일</label><input id="a-em" type="email" autocomplete="email" placeholder="이름@회사도메인">' +
+    '<button class="pri" id="a-send">인증번호 받기</button>' +
+    '<div id="a-step2" class="hidden"><label class="f">인증번호 6자리</label><input id="a-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code">' +
+    '<button class="pri" id="a-ok">확인</button></div><div id="a-msg" class="msg"></div></div>';
+  var em = load('rc_email'); if (em) $('a-em').value = em;
+  $('a-send').onclick = function () {
+    var v = $('a-em').value.trim(); if (!v) return;
+    store('rc_email', v);
+    $('a-send').disabled = true; $('a-msg').className = 'msg'; $('a-msg').innerHTML = '<span class="spin"></span>보내는 중…';
+    call('requestCode', v).then(function (r) {
+      $('a-step2').classList.remove('hidden'); $('a-send').textContent = '인증번호 다시 받기'; $('a-send').disabled = false;
+      $('a-msg').className = 'msg ok'; $('a-msg').textContent = r.sentTo + '로 보냈어요. 메일함을 확인해 주세요.'; $('a-code').focus();
+    }).catch(function (e) { $('a-send').disabled = false; $('a-msg').className = 'msg err'; $('a-msg').textContent = e.message; });
+  };
+  $('a-ok') && ($('a-ok').onclick = function () {
+    $('a-ok').disabled = true;
+    call('verifyCode', $('a-em').value.trim(), $('a-code').value.trim()).then(function (r) {
+      TOKEN = r.token; store('rc_token', r.token); loadApp();
+    }).catch(function (e) { $('a-ok').disabled = false; $('a-msg').className = 'msg err'; $('a-msg').textContent = e.message; });
+  });
+}
+function showLink() {
+  var old = $('linkbox'); if (old) { old.remove(); return; } // 열려 있으면 닫기
+  var link = (D && D.link) || (API_URL && TOKEN ? location.origin + location.pathname + '#k=' + TOKEN : '');
+  if (!link) { alert('관리자가 제출 페이지 주소를 아직 등록하지 않았어요.'); return; }
+  var box = document.createElement('div');
+  box.className = 'blk'; box.id = 'linkbox';
+  box.innerHTML = '<h3>내 전용 링크</h3><div class="hint" style="margin-top:0">이 링크로 열면 본인 확인 없이 바로 열려요. 즐겨찾기나 휴대폰 홈 화면에 추가해 두세요. 다른 사람에게 보내지 마세요.</div>' +
+    '<div class="link" id="lk">' + esc(link) + '</div><button class="sec-btn" id="lk-copy">복사</button><button class="sec-btn" id="lk-close">닫기</button>';
+  $('app').insertBefore(box, $('app').firstChild);
+  $('lk-copy').onclick = function () {
+    try { navigator.clipboard.writeText(link).then(function () { $('lk-copy').textContent = '복사했어요'; }, function () { $('lk-copy').textContent = '주소를 길게 눌러 복사해 주세요'; }); }
+    catch (e) { $('lk-copy').textContent = '주소를 길게 눌러 복사해 주세요'; }
+  };
+  $('lk-close').onclick = function () { box.remove(); };
+  window.scrollTo(0, 0);
+}
+
+// ---------- 화면 ----------
+function renderShell() {
+  $('app').innerHTML = '<div id="form"></div><div id="recent"></div>';
+  render(); renderRecent();
+}
+function choices(key, opts, col, sub) {
+  return '<div class="ch' + (col ? ' col' : '') + '">' + opts.map(function (o) {
+    if (o.sec) return '<div class="sec">' + esc(o.sec) + '</div>';
+    var cur = sub ? (S.fields[sub] || '') : S[key];
+    return '<button type="button" data-k="' + key + '"' + (sub ? ' data-f="' + esc(sub) + '"' : '') + ' data-v="' + esc(o[0]) + '" class="' + (cur === o[0] ? 'on' : '') + '">' + esc(o[1]) + '</button>';
+  }).join('') + '</div>';
+}
+function block(title, body, req, id) { return '<div class="blk"' + (id ? ' id="' + id + '"' : '') + '><h3>' + esc(title) + (req ? '<span class="req">필수</span>' : '') + '</h3>' + body + '</div>'; }
+function hint(t) { return t ? '<div class="hint">' + esc(t) + '</div>' : ''; }
+/** 제출 페이지에 보이는 이름(서버 labels) / 접힌 한 줄용으로 괄호 앞까지만 */
+function lab(v) { return (D && D.labels && D.labels[v]) || v; }
+function short(t) { return String(t || '').replace(/\s*\([^)]*\)\s*$/, ''); }
+function slotBox(kind, max, title, help) { return block(title, '<div class="slot" id="slot-' + kind + '"></div>' + hint(help), true, 'b-' + kind); }
+/**
+ * 한 단계씩 펼치기: 답한 질문은 한 줄 요약(변경)으로 접고, 아직 답하지 않은 첫 질문만 펼침.
+ * 사진 칸은 한 장이라도 올리면 그대로 보이면서 다음 질문으로 넘어감.
+ */
+function render(scroll) {
+  if (!D) return;
+  var h = '', O = D.opt, stop = false;
+  var step = function (key, title, answer, full) {
+    if (stop) return;
+    if (answer && S.edit !== key) { h += '<div class="sum"><span class="q">' + esc(title) + '</span><span class="a">' + esc(answer) + '</span><button type="button" data-edit="' + key + '">변경</button></div>'; return; }
+    h += full().replace('<div class="blk"', '<div class="blk cur"'); stop = true;
+  };
+  var photo = function (kind, max, title, help) {
+    if (stop) return;
+    var box = slotBox(kind, max, title, help);
+    if (!S.files[kind].length) { box = box.replace('<div class="blk"', '<div class="blk cur"'); stop = true; }
+    h += box;
+  };
+  var pickTitle = function (opts, v) { var o = opts.filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : v; };
+  var kinds = [['LUNCH', '점심 식대 (식대카드)'], ['OTHER', '그 밖의 경비']];
+  step('kind', '영수증', S.kind ? pickTitle(kinds, S.kind) : '', function () { return block('어떤 영수증인가요?', choices('kind', kinds) + hint('영수증 1장 = 1번 제출이에요.')); });
+  if (S.kind === 'LUNCH') {
+    photo('receipt', 1, '점심 영수증 사진', '사진만 올리면 결제일·금액·카드는 자동으로 판독해요.');
+    if (!stop) { h += submitBlock(); stop = true; }
+  } else if (S.kind === 'OTHER') {
+    step('pay', '결제수단', S.pay, function () { return block('어떻게 결제하셨나요?', choices('pay', D.pay.map(function (p) { return [p, p]; })) + hint('금액은 영수증에서 자동으로 읽어요.')); });
+    if (S.pay === '법인카드') {
+      var c = D.cards.filter(function (x) { return x.id === S.card; })[0];
+      step('card', '사용한 카드', S.card === 'UNKNOWN' ? '잘 모르겠음' : (c ? c.label : ''), cardBlock);
+    }
+    if (S.pay === '개인카드') {
+      var shops = [[O.SHOP_STORE, lab(O.SHOP_STORE)], [O.SHOP_ONLINE, lab(O.SHOP_ONLINE)]];
+      step('shop', '결제한 곳', S.shop === O.SHOP_ONLINE ? '온라인 쇼핑몰' : (S.shop ? short(lab(S.shop)) : ''), function () { return block('어디서 결제하셨나요?', choices('shop', shops, true) + hint(D.help.shop)); });
+      if (S.shop === O.SHOP_ONLINE) photo('order', D.max.order, '주문내역 사진', D.help.order);
+    }
+    if (S.pay === '개인송금') photo('transfer', 1, '이체증 사진', D.help.transfer);
+    if (S.pay) photo('receipt', D.max.receipt, '영수증 사진', '카드전표·영수증 전체가 보이게 찍어 주세요. 긴 영수증은 여러 장으로 나눠 올려도 돼요(최대 ' + D.max.receipt + '장).');
+    if (S.pay) step('group', '비용 종류', S.group ? lab(S.group) : '', function () { return block('어떤 비용인가요?', choices('group', D.groups.map(function (x) { return [x.name, lab(x.name)]; }))); });
+    var g = D.groups.filter(function (x) { return x.name === S.group; })[0];
+    if (g) step('cat', '분류', S.cat, function () { return block('분류를 골라 주세요', choices('cat', g.cats.map(function (x) { return [x, x]; }))); });
+    if (S.cat) {
+      var spec = D.cats[S.cat], page = spec.page ? D.pages[spec.page] : null;
+      if (page && page.fields.length) step('fields', page.title, S.fieldsOk ? fieldSummary(page) : '', function () { return fieldsBlock(page); });
+      if (page && page.photo) photo('photo', D.max.photo, '물품 사진', '영수증과 별도로, 산 물건 사진');
+      var uses = [O.USE_SITE, O.USE_KCOMMON, O.USE_PLACE, O.USE_NONE].map(function (v) { return [v, lab(v)]; });
+      if (spec.next === 'USE') {
+        step('use', '사용처', S.use ? short(lab(S.use)) : '', function () { return block('이 비용은 어디를 위해 쓰셨나요?', choices('use', uses, true) + hint(D.help.use)); });
+        if (S.use === O.USE_SITE) step('site', '현장', S.site, function () { return siteBlock(false); });
+        if (S.use === O.USE_PLACE) step('site', '매장·사무실', S.place, function () { return siteBlock(true); });
+      } else if (spec.next === 'KSITE') {
+        step('ksite', O.KSITE_TITLE, S.ksite ? short(lab(S.ksite)) : '', function () { return block('어느 현장 비용인가요?', choices('ksite', [[O.USE_SITE, lab(O.USE_SITE)], [O.USE_KCOMMON, lab(O.USE_KCOMMON)]], true) + hint(D.help.ksite)); });
+        if (S.ksite === O.USE_SITE) step('site', '현장', S.site, function () { return siteBlock(false); });
+      }
+      if (!stop) { h += submitBlock(); stop = true; }
+    }
+  }
+  $('form').innerHTML = h;
+  ['receipt', 'order', 'transfer', 'photo'].forEach(paintSlot);
+  paintSiteList();
+  if (scroll) { var cur = document.querySelector('#form .blk.cur'); if (cur) cur.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+function cardBlock() {
+  var mine = D.cards.filter(function (c) { return c.mine; }), shared = D.cards.filter(function (c) { return !c.mine; });
+  var opts = [];
+  if (mine.length) { opts.push({ sec: '내 카드' }); mine.forEach(function (c) { opts.push([c.id, c.label]); }); }
+  if (shared.length) { opts.push({ sec: '공용 카드' }); shared.forEach(function (c) { opts.push([c.id, c.label]); }); }
+  opts.push({ sec: ' ' }); opts.push(['UNKNOWN', '잘 모르겠음 (영수증 카드번호로 찾아요)']);
+  return block('어떤 카드로 결제하셨나요?', choices('card', opts, true));
+}
+function fieldSummary(p) { return p.fields.map(function (f) { return S.fields[f.name]; }).filter(Boolean).join(' · '); }
+function siteBlock(place) {
+  return block(place ? '어디를 위한 비용인가요?' : '현장을 골라 주세요', (place ? '' : hint('최근 현장이 위에 있어요. K번호나 이름으로 찾을 수 있어요.')) + '<div id="sitebox" data-place="' + (place ? 1 : 0) + '"></div>');
+}
+function fieldsBlock(p) {
+  var h = '';
+  p.fields.forEach(function (f) {
+    h += '<label class="f">' + esc(f.name) + (f.required ? '' : ' <span style="color:#888">(선택)</span>') + '</label>';
+    var v = S.fields[f.name] || '';
+    if (f.type === 'mc') h += choices('field', f.choices.map(function (c) { return [c, c]; }), false, f.name);
+    else if (f.type === 'list') h += choices('field', D.cars.map(function (c) { return [c.value, c.label]; }), true, f.name);
+    else if (f.type === 'para') h += '<textarea data-in="' + esc(f.name) + '">' + esc(v) + '</textarea>';
+    else h += '<input type="' + (f.type === 'int' ? 'tel' : 'text') + '"' + (f.type === 'int' ? ' inputmode="numeric"' : '') + ' data-in="' + esc(f.name) + '" value="' + esc(v) + '">';
+    if (f.help) h += hint(f.help);
+  });
+  h += '<button class="pri" type="button" id="f-next">다음</button><div class="msg err" id="f-msg"></div>';
+  return block(p.title, h);
+}
+function paintSiteList() {
+  var box = $('sitebox'); if (!box) return;
+  var place = box.getAttribute('data-place') === '1';
+  var items = place ? D.places : D.sites, key = place ? 'place' : 'site', cur = S[key];
+  if (!box.firstChild) {
+    box.innerHTML = (place ? '' : '<input type="text" class="search" id="siteq" placeholder="현장 이름·K번호로 찾기" value="' + esc(S.siteQ) + '">' +
+      '<button type="button" class="sec-btn" id="as-past" data-k="aspast" data-v="1" style="margin:8px 0;padding:6px 10px;line-height:1.35">목록에 없는 지난 현장 AS예요<br><span style="font-size:13px;color:var(--sub)">키친리노 현장 공통으로 처리돼요</span></button>') + '<div class="list" id="sitelist"></div>';
+    var q = $('siteq'); if (q) q.oninput = function () { S.siteQ = q.value; paintSiteList(); };
+  }
+  var qq = (S.siteQ || '').replace(/\s/g, '').toLowerCase();
+  var list = items.filter(function (x) { return place || !qq || x.replace(/\s/g, '').toLowerCase().indexOf(qq) >= 0; });
+  $('sitelist').innerHTML = list.map(function (x) { return '<button type="button" data-k="' + key + '" data-v="' + esc(x) + '" class="' + (cur === x ? 'on' : '') + '">' + esc(x) + '</button>'; }).join('') ||
+    '<div class="hint" style="padding:10px">' + (place ? '찾는 곳이 없어요. 회계인사팀에 알려 주세요.' : '찾는 현장이 없어요. 지난 현장 AS면 위 버튼을, 올해 현장이면 회계인사팀에 알려 주세요.') + '</div>';
+}
+function submitBlock() {
+  return '<div class="blk" id="b-submit"><h3>제출</h3>' +
+    '<label class="f">메모 <span style="color:#888">(선택 — 회계인사팀에 남길 말)</span></label><textarea id="memo" data-memo="1"' + (S.asPast ? ' placeholder="AS 한 현장 이름을 적어 주세요 (예: ○○아파트 101동)"' : '') + '>' + esc(S.memo) + '</textarea>' +
+    '<button class="pri" id="go" type="button">제출하기</button><div id="go-msg" class="msg"></div></div>';
+}
+function renderRecent() {
+  var el = $('recent'); if (!el || !D) return;
+  if (!D.recent || !D.recent.length) { el.innerHTML = ''; return; }
+  el.innerHTML = block('최근 제출', '<table class="rc">' + D.recent.map(function (r) {
+    return '<tr><td>' + esc(r.at) + '<br><span style="color:#888">' + esc(r.no) + '</span></td><td>' + esc(r.cat) + (r.merchant ? '<br><span style="color:#888">' + esc(r.merchant) + '</span>' : '') + '</td><td>' + (r.total != null ? won(r.total) + '원<br>' : '') + esc(r.status) + '</td></tr>';
+  }).join('') + '</table>');
+}
+
+// ---------- 고르기·입력 ----------
+var RESET = { kind: ['pay', 'card', 'shop', 'group', 'cat', 'use', 'ksite', 'site', 'place'], pay: ['card', 'shop'], group: ['cat'], cat: ['use', 'ksite', 'site', 'place'], use: ['site', 'place'], ksite: ['site'] };
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('button[data-k]'); if (!b || !S) return;
+  var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
+  if (k === 'field') { S.fields[b.getAttribute('data-f')] = v; var y0 = window.scrollY; render(); window.scrollTo(0, y0); return; }
+  if (k === 'aspast') { // 목록에 없는 지난 현장 AS → 키친리노 현장 공통
+    if (D.cats[S.cat].next === 'KSITE') S.ksite = D.opt.USE_KCOMMON; else S.use = D.opt.USE_KCOMMON;
+    S.site = ''; S.place = ''; S.siteQ = ''; S.asPast = true; S.edit = ''; render(true); return;
+  }
+  if (k === 'site' || k === 'place') { S[k] = v; S.asPast = false; S.edit = ''; render(true); return; }
+  if (S[k] === v) { S.edit = ''; render(true); return; }
+  S[k] = v; S.edit = '';
+  (RESET[k] || []).forEach(function (x) { S[x] = ''; });
+  if (['kind', 'pay', 'group', 'cat', 'use', 'ksite'].indexOf(k) >= 0) S.asPast = false;
+  if (k === 'kind') { S.files = { receipt: [], order: [], transfer: [], photo: [] }; S.fields = {}; }
+  if (k === 'pay') { if (v !== '개인카드') S.files.order = []; if (v !== '개인송금') S.files.transfer = []; }
+  if (k === 'shop' && v !== D.opt.SHOP_ONLINE) S.files.order = [];
+  if (k === 'group' || k === 'cat') { S.fields = {}; S.files.photo = []; S.fieldsOk = false; }
+  render(true);
+});
+// 변경: 접힌 질문을 다시 펼침 / 입력 칸 다음
+document.addEventListener('click', function (ev) {
+  var e = ev.target.getAttribute && ev.target.getAttribute('data-edit');
+  if (e && S) { S.edit = e; if (e === 'site') S.siteQ = ''; render(true); return; }
+  if (ev.target && ev.target.id === 'f-next') {
+    var p = D.pages[D.cats[S.cat].page], m = [];
+    p.fields.forEach(function (f) { var v = String(S.fields[f.name] || '').trim(); if (f.required && !v) m.push(f.name); else if (v && f.type === 'int' && !/^\d+$/.test(v)) m.push(f.name + '(숫자)'); });
+    if (m.length) { $('f-msg').textContent = '입력해 주세요: ' + m.join(', '); return; }
+    S.fieldsOk = true; S.edit = ''; render(true);
+  }
+});
+document.addEventListener('input', function (ev) {
+  var t = ev.target; if (!S) return;
+  if (t.hasAttribute('data-in')) S.fields[t.getAttribute('data-in')] = t.value;
+  if (t.hasAttribute('data-memo')) S.memo = t.value;
+});
+document.addEventListener('click', function (ev) { if (ev.target && ev.target.id === 'go') submit(); });
+
+// ---------- 사진 ----------
+function paintSlot(kind) {
+  var el = $('slot-' + kind); if (!el) return;
+  var max = kind === 'receipt' && S.kind === 'LUNCH' ? 1 : D.max[kind];
+  var list = S.files[kind];
+  var h = list.map(function (f) {
+    var st = f.status === 'done' ? '' : f.status === 'error' ? '<div class="st err">실패 · 눌러서 다시</div>' : '<div class="st"><span class="spin" style="width:10px;height:10px;border-width:2px"></span>올리는 중</div>';
+    var inner = f.url ? '<img src="' + f.url + '" alt="">' : '<span>' + esc(f.pdf ? 'PDF' : '사진') + '<br>' + esc(f.name.slice(0, 12)) + '</span>';
+    return '<div class="th" data-lid="' + f.lid + '">' + inner + st + '<button type="button" class="x" data-del="' + kind + ':' + f.lid + '">×</button></div>';
+  }).join('');
+  if (list.length < max) h += '<label class="add"><b>+</b>' + (list.length ? '더 추가' : '사진 추가') + '<input type="file" accept="image/*,application/pdf"' + (max > 1 ? ' multiple' : '') + ' data-slot="' + kind + '" hidden></label>';
+  el.innerHTML = h;
+}
+document.addEventListener('change', function (ev) {
+  var t = ev.target; if (!t.hasAttribute || !t.hasAttribute('data-slot')) return;
+  var kind = t.getAttribute('data-slot');
+  var max = kind === 'receipt' && S.kind === 'LUNCH' ? 1 : D.max[kind];
+  Array.prototype.slice.call(t.files || []).slice(0, Math.max(0, max - S.files[kind].length)).forEach(function (file) {
+    var f = { lid: ++LID, name: file.name || '사진', status: 'up', id: '', file: file, pdf: /pdf/i.test(file.type) || /\.pdf$/i.test(file.name) };
+    if (!f.pdf && /^image\/(jpeg|png|webp|gif)/i.test(file.type)) { try { f.url = URL.createObjectURL(file); } catch (e) { } }
+    S.files[kind].push(f); upload(kind, f);
+  });
+  t.value = '';
+  if (S.files[kind].length) render(true); else paintSlot(kind);
+});
+document.addEventListener('click', function (ev) {
+  var d = ev.target.getAttribute && ev.target.getAttribute('data-del');
+  if (d) { var p = d.split(':'); S.files[p[0]] = S.files[p[0]].filter(function (f) { return String(f.lid) !== p[1]; }); if (S.files[p[0]].length) paintSlot(p[0]); else render(); return; }
+  var th = ev.target.closest && ev.target.closest('.th');
+  if (th && th.querySelector('.st.err')) {
+    var lid = th.getAttribute('data-lid');
+    ['receipt', 'order', 'transfer', 'photo'].forEach(function (k) { S.files[k].forEach(function (f) { if (String(f.lid) === lid) { f.status = 'up'; paintSlot(k); upload(k, f); } }); });
+  }
+});
+function readB64(file) {
+  return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(',')[1] || ''); }; r.onerror = function () { rej(new Error('파일을 읽지 못했어요.')); }; r.readAsDataURL(file); });
+}
+function loadImg(file) {
+  return new Promise(function (res, rej) {
+    var u = URL.createObjectURL(file), img = new Image();
+    img.onload = function () { res(img); }; img.onerror = function () { URL.revokeObjectURL(u); rej(new Error('img')); }; img.src = u;
+  });
+}
+/** 사진은 긴 변 2000px JPEG로 줄여서(판독에 충분·업로드 빠름), PDF는 그대로 */
+function prep(file) {
+  var MB10 = 10 * 1024 * 1024;
+  if (/pdf/i.test(file.type) || /\.pdf$/i.test(file.name)) {
+    if (file.size > MB10) return Promise.reject(new Error('PDF는 10MB까지예요.'));
+    return readB64(file).then(function (b) { return { b64: b, mime: 'application/pdf' }; });
+  }
+  return loadImg(file).then(function (img) {
+    var w = img.naturalWidth, h = img.naturalHeight; if (!w || !h) throw new Error('size');
+    var sc = Math.min(1, 2000 / Math.max(w, h)); w = Math.round(w * sc); h = Math.round(h * sc);
+    var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+    return { b64: cv.toDataURL('image/jpeg', 0.85).split(',')[1], mime: 'image/jpeg' };
+  }).catch(function () {
+    if (file.size > MB10) throw new Error('사진이 너무 커요(10MB까지).');
+    var mime = (file.type || '').toLowerCase() || (/\.hei[cf]$/i.test(file.name) ? 'image/heic' : 'image/jpeg');
+    return readB64(file).then(function (b) { return { b64: b, mime: mime }; });
+  });
+}
+function upload(kind, f) {
+  prep(f.file).then(function (p) { return call('uploadPhoto', TOKEN, p.b64, p.mime, kind); }).then(function (r) {
+    f.id = r.id; f.status = 'done'; paintSlot(kind); afterUpload();
+  }).catch(function (e) { f.status = 'error'; f.err = e.message; paintSlot(kind); afterUpload(); });
+}
+/** 사진을 올리는 중에 [제출하기]를 눌렀으면, 다 올라가는 대로 이어서 제출 */
+function afterUpload() { if (S && S.waitSubmit && !busy()) { S.waitSubmit = false; submit(); } }
+function ids(kind) { return S.files[kind].filter(function (f) { return f.status === 'done'; }).map(function (f) { return f.id; }); }
+function busy() { return ['receipt', 'order', 'transfer', 'photo'].some(function (k) { return S.files[k].some(function (f) { return f.status === 'up'; }); }); }
+// ---------- 제출 ----------
+function missing() {
+  var m = [], O = D.opt;
+  if (!S.kind) return ['어떤 영수증인지'];
+  if (!ids('receipt').length) m.push('영수증 사진');
+  if (S.kind === 'LUNCH') return m;
+  if (!S.pay) { m.push('결제수단'); return m; }
+  if (S.pay === '법인카드' && !S.card) m.push('사용한 카드');
+  if (S.pay === '개인카드' && !S.shop) m.push('결제한 곳');
+  if (S.pay === '개인카드' && S.shop === O.SHOP_ONLINE && !ids('order').length) m.push('주문내역 사진');
+  if (S.pay === '개인송금' && !ids('transfer').length) m.push('이체증 사진');
+  if (!S.group || !S.cat) { m.push('분류'); return m; }
+  var spec = D.cats[S.cat];
+  if (spec.page) {
+    var p = D.pages[spec.page];
+    p.fields.forEach(function (f) { var v = String(S.fields[f.name] || '').trim(); if (f.required && !v) m.push(f.name); else if (v && f.type === 'int' && !/^\d+$/.test(v)) m.push(f.name + '(숫자)'); });
+    if (p.photo && !ids('photo').length) m.push('물품 사진');
+  }
+  if (spec.next === 'USE') { if (!S.use) m.push('사용처'); else if (S.use === O.USE_SITE && !S.site) m.push('현장'); else if (S.use === O.USE_PLACE && !S.place) m.push('매장·사무실·물류'); }
+  if (spec.next === 'KSITE') { if (!S.ksite) m.push(O.KSITE_TITLE); else if (S.ksite === O.USE_SITE && !S.site) m.push('현장'); }
+  return m;
+}
+function submit() {
+  var msg = $('go-msg');
+  if (S.sending) return;
+  if (busy()) { S.waitSubmit = true; msg.className = 'msg'; msg.innerHTML = '<span class="spin"></span>사진을 올리는 중이에요. 다 올라가면 바로 제출할게요.'; return; }
+  if (['receipt', 'order', 'transfer', 'photo'].some(function (k) { return S.files[k].some(function (f) { return f.status === 'error'; }); })) {
+    msg.className = 'msg err'; msg.textContent = '올리지 못한 사진이 있어요. 사진을 눌러 다시 올리거나 ×로 지워 주세요.'; return;
+  }
+  var m = missing();
+  if (m.length) { msg.className = 'msg err'; msg.textContent = '아직 입력하지 않은 것: ' + m.join(', '); return; }
+  S.sending = true; $('go').disabled = true;
+  msg.className = 'msg'; msg.innerHTML = '<span class="spin"></span>제출하는 중이에요…';
+  var d = { kind: S.kind, pay: S.pay, card: S.card, shop: S.shop, group: S.group, cat: S.cat, fields: S.fields, use: S.use, ksite: S.ksite, site: S.site, place: S.place, memo: S.memo, asPast: !!S.asPast,
+    files: { receipt: ids('receipt'), order: ids('order'), transfer: ids('transfer'), photo: ids('photo') } };
+  call('submitReceipt', TOKEN, d).then(function (r) {
+    D.recent = r.recent;
+    $('form').innerHTML = '<div class="blk done"><div style="font-size:15px">접수됐어요</div><div class="no">' + esc(r.no) + '</div><div class="hint" style="margin-top:0">영수증 내용은 회계인사팀이 확인해요. 보완이 필요하면 따로 안내드려요.</div><button class="pri" id="again" type="button">다른 영수증 제출</button></div>';
+    $('again').onclick = function () { S = blank(); render(); window.scrollTo(0, 0); };
+    renderRecent(); window.scrollTo(0, 0);
+  }).catch(function (e) { S.sending = false; var g = $('go'); if (g) g.disabled = false; msg.className = 'msg err'; msg.textContent = e.message; });
+}
+
+start();
+</script>
+</body>
+</html>
