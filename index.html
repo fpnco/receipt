@@ -19,7 +19,7 @@
   .blk { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 10px 0; }
   .blk h3 { margin: 0 0 10px; font-size: 16px; }
   .blk h3 .req { color: var(--err); font-weight: normal; font-size: 13px; margin-left: 4px; }
-  .hint { color: var(--sub); font-size: 13px; margin-top: 8px; white-space: pre-line; }
+  .hint { color: var(--sub); font-size: 13px; margin-top: 8px; white-space: pre-line; word-break: keep-all; }
   .ch { display: flex; flex-wrap: wrap; gap: 8px; }
   .ch.col { flex-direction: column; }
   .ch button { flex: 1 1 auto; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); background: #fff; border-radius: 10px; font-size: 15px; color: var(--ink); text-align: left; }
@@ -61,6 +61,10 @@
   .sum .a { flex: 1 1 auto; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sum button { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 3px 10px; font-size: 13px; color: var(--pri); }
   .blk.cur { border-color: var(--pri); box-shadow: 0 0 0 2px var(--pri2); }
+  .sum.em { border-color: var(--pri); border-left-width: 4px; background: var(--pri2); }
+  .sum.em .a { white-space: normal; overflow: visible; word-break: keep-all; overflow-wrap: anywhere; }
+  .list .lh { padding: 8px 12px 4px; font-size: 12px; color: var(--sub); border-bottom: 1px solid #eee; }
+  .list button.all { text-align: center; color: var(--pri); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -101,7 +105,7 @@ function call(fn) {
   });
 }
 function blank() {
-  return { kind: '', pay: '', card: '', shop: '', group: '', cat: '', fields: {}, use: '', ksite: '', site: '', place: '', siteQ: '', memo: '',
+  return { kind: '', pay: '', card: '', shop: '', group: '', cat: '', fields: {}, use: '', ksite: '', site: '', place: '', siteQ: '', showAll: false, memo: '',
     files: { receipt: [], order: [], transfer: [], photo: [] }, sending: false, edit: '', fieldsOk: false };
 }
 
@@ -195,7 +199,11 @@ function render(scroll) {
   var h = '', O = D.opt, stop = false;
   var step = function (key, title, answer, full) {
     if (stop) return;
-    if (answer && S.edit !== key) { h += '<div class="sum"><span class="q">' + esc(title) + '</span><span class="a">' + esc(answer) + '</span><button type="button" data-edit="' + key + '">변경</button></div>'; return; }
+    if (answer && S.edit !== key) {
+      // 현장·매장은 잘리지 않게 두 줄 + 강조(제출 전에 한 번 더 눈에 띄게)
+      var em = key === 'site';
+      h += '<div class="sum' + (em ? ' em' : '') + '"><span class="q">' + esc(title) + '</span><span class="a">' + (em ? siteHtml(answer) : esc(answer)) + '</span><button type="button" data-edit="' + key + '">변경</button></div>'; return;
+    }
     h += full().replace('<div class="blk"', '<div class="blk cur"'); stop = true;
   };
   var photo = function (kind, max, title, help) {
@@ -225,7 +233,7 @@ function render(scroll) {
     if (S.pay) photo('receipt', D.max.receipt, '영수증 사진', '카드전표·영수증 전체가 보이게 찍어 주세요. 긴 영수증은 여러 장으로 나눠 올려도 돼요(최대 ' + D.max.receipt + '장).');
     if (S.pay) step('group', '비용 종류', S.group ? lab(S.group) : '', function () { return block('어떤 비용인가요?', choices('group', D.groups.map(function (x) { return [x.name, lab(x.name)]; }))); });
     var g = D.groups.filter(function (x) { return x.name === S.group; })[0];
-    if (g) step('cat', '분류', S.cat, function () { return block('분류를 골라 주세요', choices('cat', g.cats.map(function (x) { return [x, x]; }))); });
+    if (g) step('cat', '분류', S.cat, function () { return block('분류를 골라 주세요', choices('cat', g.cats.map(function (x) { return [x, x]; })) + hint(g.help)); });
     if (S.cat) {
       var spec = D.cats[S.cat], page = spec.page ? D.pages[spec.page] : null;
       if (page && page.fields.length) step('fields', page.title, S.fieldsOk ? fieldSummary(page) : '', function () { return fieldsBlock(page); });
@@ -257,8 +265,10 @@ function cardBlock() {
 }
 function fieldSummary(p) { return p.fields.map(function (f) { return S.fields[f.name]; }).filter(Boolean).join(' · '); }
 function siteBlock(place) {
-  return block(place ? '어디를 위한 비용인가요?' : '현장을 골라 주세요', (place ? '' : hint('최근 현장이 위에 있어요. K번호나 이름으로 찾을 수 있어요.')) + '<div id="sitebox" data-place="' + (place ? 1 : 0) + '"></div>');
+  return block(place ? '어디를 위한 비용인가요?' : '현장을 골라 주세요', (place ? '' : hint('K번호나 현장 이름으로 찾아 주세요. 비슷한 이름이 있으니 K번호를 꼭 확인해 주세요.')) + '<div id="sitebox" data-place="' + (place ? 1 : 0) + '"></div>');
 }
+/** 고른 현장 한 줄: K번호(지역) / 현장 이름 두 줄로 */
+function siteHtml(v) { var m = /^(K\d{5}(?:\([^)]*\))?)-(.+)$/.exec(String(v || '')); return m ? esc(m[1]) + '<br>' + esc(m[2]) : esc(v); }
 function fieldsBlock(p) {
   var h = '';
   p.fields.forEach(function (f) {
@@ -283,10 +293,19 @@ function paintSiteList() {
     var q = $('siteq'); if (q) q.oninput = function () { S.siteQ = q.value; paintSiteList(); };
   }
   var qq = (S.siteQ || '').replace(/\s/g, '').toLowerCase();
+  var btn = function (x) { return '<button type="button" data-k="' + key + '" data-v="' + esc(x) + '" class="' + (cur === x ? 'on' : '') + '">' + esc(x) + '</button>'; };
+  // 시공 현장: 검색하지 않았으면 내가 최근 고른 현장(최대 3곳)만 + [전체 목록 보기] — 긴 목록을 내리다 옆 줄을 누르는 실수 줄이기
+  if (!place && !qq && !S.showAll) {
+    var mine = (D.mySites || []).filter(function (x) { return items.indexOf(x) >= 0; });
+    $('sitelist').innerHTML = (mine.length ? '<div class="lh">내가 최근 고른 현장</div>' + mine.map(btn).join('') : '') +
+      '<button type="button" class="all" id="site-all">전체 목록 보기 (' + items.length + '곳)</button>';
+    return;
+  }
   var list = items.filter(function (x) { return place || !qq || x.replace(/\s/g, '').toLowerCase().indexOf(qq) >= 0; });
-  $('sitelist').innerHTML = list.map(function (x) { return '<button type="button" data-k="' + key + '" data-v="' + esc(x) + '" class="' + (cur === x ? 'on' : '') + '">' + esc(x) + '</button>'; }).join('') ||
+  $('sitelist').innerHTML = list.map(btn).join('') ||
     '<div class="hint" style="padding:10px">' + (place ? '찾는 곳이 없어요. 회계인사팀에 알려 주세요.' : '찾는 현장이 없어요. 지난 현장 AS면 위 버튼을, 올해 현장이면 회계인사팀에 알려 주세요.') + '</div>';
 }
+document.addEventListener('click', function (ev) { if (ev.target && ev.target.id === 'site-all' && S) { S.showAll = true; paintSiteList(); } });
 function submitBlock() {
   return '<div class="blk" id="b-submit"><h3>제출</h3>' +
     '<label class="f">메모 <span style="color:#888">(선택 — 회계인사팀에 남길 말)</span></label><textarea id="memo" data-memo="1"' + (S.asPast ? ' placeholder="AS 한 현장 이름을 적어 주세요 (예: ○○아파트 101동)"' : '') + '>' + esc(S.memo) + '</textarea>' +
@@ -301,7 +320,7 @@ function renderRecent() {
 }
 
 // ---------- 고르기·입력 ----------
-var RESET = { kind: ['pay', 'card', 'shop', 'group', 'cat', 'use', 'ksite', 'site', 'place'], pay: ['card', 'shop'], group: ['cat'], cat: ['use', 'ksite', 'site', 'place'], use: ['site', 'place'], ksite: ['site'] };
+var RESET = { kind: ['pay', 'card', 'shop', 'group', 'cat', 'use', 'ksite', 'site', 'place', 'showAll'], pay: ['card', 'shop'], group: ['cat'], cat: ['use', 'ksite', 'site', 'place', 'showAll'], use: ['site', 'place', 'showAll'], ksite: ['site', 'showAll'] };
 document.addEventListener('click', function (ev) {
   var b = ev.target.closest('button[data-k]'); if (!b || !S) return;
   var k = b.getAttribute('data-k'), v = b.getAttribute('data-v');
@@ -324,7 +343,7 @@ document.addEventListener('click', function (ev) {
 // 변경: 접힌 질문을 다시 펼침 / 입력 칸 다음
 document.addEventListener('click', function (ev) {
   var e = ev.target.getAttribute && ev.target.getAttribute('data-edit');
-  if (e && S) { S.edit = e; if (e === 'site') S.siteQ = ''; render(true); return; }
+  if (e && S) { S.edit = e; if (e === 'site') { S.siteQ = ''; S.showAll = false; } render(true); return; }
   if (ev.target && ev.target.id === 'f-next') {
     var p = D.pages[D.cats[S.cat].page], m = [];
     p.fields.forEach(function (f) { var v = String(S.fields[f.name] || '').trim(); if (f.required && !v) m.push(f.name); else if (v && f.type === 'int' && !/^\d+$/.test(v)) m.push(f.name + '(숫자)'); });
@@ -446,7 +465,7 @@ function submit() {
   var d = { kind: S.kind, pay: S.pay, card: S.card, shop: S.shop, group: S.group, cat: S.cat, fields: S.fields, use: S.use, ksite: S.ksite, site: S.site, place: S.place, memo: S.memo, asPast: !!S.asPast,
     files: { receipt: ids('receipt'), order: ids('order'), transfer: ids('transfer'), photo: ids('photo') } };
   call('submitReceipt', TOKEN, d).then(function (r) {
-    D.recent = r.recent;
+    D.recent = r.recent; if (r.mySites) D.mySites = r.mySites;
     $('form').innerHTML = '<div class="blk done"><div style="font-size:15px">접수됐어요</div><div class="no">' + esc(r.no) + '</div><div class="hint" style="margin-top:0">영수증 내용은 회계인사팀이 확인해요. 보완이 필요하면 따로 안내드려요.</div><button class="pri" id="again" type="button">다른 영수증 제출</button></div>';
     $('again').onclick = function () { S = blank(); render(); window.scrollTo(0, 0); };
     renderRecent(); window.scrollTo(0, 0);
