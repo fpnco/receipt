@@ -120,11 +120,11 @@ function loadApp() {
     D = d; S = blank();
     $('who').textContent = d.me.name + '님' + (d.me.team ? ' · ' + d.me.team : '');
     $('hbtn').innerHTML = '<button id="b-link">내 전용 링크</button><button id="b-out">다른 사람</button>';
-    $('b-link').onclick = showLink; $('b-out').onclick = function () { if (confirm('본인 확인을 지우고 다시 할까요?')) logout(''); };
+    $('b-link').onclick = showLink; $('b-out').onclick = function () { if (confirm('이 기기에 저장된 본인 확인(' + d.me.name + '님)을 지울까요?\n\n같은 휴대폰·PC를 다른 직원이 쓰거나, 내 이름이 아닌 다른 사람으로 열렸을 때 눌러요. 지우면 처음처럼 회사 메일 인증을 다시 해요.')) logout(''); };
     renderShell();
   }).catch(function (e) { if (TOKEN) $('app').innerHTML = '<div class="blk msg err">' + esc(e.message) + '</div><button class="sec-btn" onclick="loadApp()">다시 시도</button>'; });
 }
-function logout(msg) { TOKEN = ''; store('rc_token', null); D = null; $('who').textContent = ''; $('hbtn').innerHTML = ''; showAuth(msg); }
+function logout(msg) { try { if (/[#?&]k=/.test(location.href)) history.replaceState(null, '', location.pathname); } catch (e) { } TOKEN = ''; store('rc_token', null); D = null; $('who').textContent = ''; $('hbtn').innerHTML = ''; showAuth(msg); }
 function showAuth(msg) {
   $('app').innerHTML =
     '<div class="blk"><h3>본인 확인</h3>' +
@@ -157,7 +157,7 @@ function showLink() {
   if (!link) { alert('관리자가 제출 페이지 주소를 아직 등록하지 않았어요.'); return; }
   var box = document.createElement('div');
   box.className = 'blk'; box.id = 'linkbox';
-  box.innerHTML = '<h3>내 전용 링크</h3><div class="hint" style="margin-top:0">이 링크로 열면 본인 확인 없이 바로 열려요. 즐겨찾기나 휴대폰 홈 화면에 추가해 두세요. 다른 사람에게 보내지 마세요.</div>' +
+  box.innerHTML = '<h3>내 전용 링크</h3><div class="hint" style="margin-top:0">이 링크로 열면 본인 확인 없이 바로 열려요. [복사]해서 휴대폰 홈 화면에 추가하거나 즐겨찾기·북마크 등 편한 곳에 저장해 두세요. 다른 사람에게 보내지 마세요(내 이름으로 제출돼요).</div>' +
     '<div class="link" id="lk">' + esc(link) + '</div><button class="sec-btn" id="lk-copy">복사</button><button class="sec-btn" id="lk-close">닫기</button>';
   $('app').insertBefore(box, $('app').firstChild);
   $('lk-copy').onclick = function () {
@@ -253,7 +253,7 @@ function cardBlock() {
   if (mine.length) { opts.push({ sec: '내 카드' }); mine.forEach(function (c) { opts.push([c.id, c.label]); }); }
   if (shared.length) { opts.push({ sec: '공용 카드' }); shared.forEach(function (c) { opts.push([c.id, c.label]); }); }
   opts.push({ sec: ' ' }); opts.push(['UNKNOWN', '잘 모르겠음 (영수증 카드번호로 찾아요)']);
-  return block('어떤 카드로 결제하셨나요?', choices('card', opts, true));
+  return block('어떤 카드로 결제하셨나요?', choices('card', opts, true) + hint(D.help.card));
 }
 function fieldSummary(p) { return p.fields.map(function (f) { return S.fields[f.name]; }).filter(Boolean).join(' · '); }
 function siteBlock(place) {
