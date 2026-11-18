@@ -200,6 +200,17 @@ textarea { min-height: 80px; resize: vertical; }
 table.rc { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.rc td { border-bottom: 1px solid var(--line); padding: 9px 4px; vertical-align: top; word-break: keep-all; }
 table.rc tr:last-child td { border-bottom: 0; }
+table.rc tr.has-act td { border-bottom: 0; padding-bottom: 2px; }
+table.rc tr.act td { text-align: left; white-space: normal; padding-top: 0; }
+table.rc tr.act .sbtn { margin: 0 6px 0 0; font-size: 13px; min-height: 34px; padding: 5px 10px; }
+table.rc tr.act .msg { margin-top: 4px; }
+table.rc tr.act .msg:empty { display: none; }
+.seg.two { grid-template-columns: repeat(2, 1fr); }
+.hseg { margin-bottom: 8px; }
+.hbasis { display: flex; align-items: center; gap: 6px; margin: 2px 0 10px; font-size: 13px; }
+.hbasis .sbtn { min-height: 32px; padding: 4px 12px; font-size: 13px; }
+.hbasis .sbtn[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+.hsum { font-size: 15px; font-weight: 600; margin: 4px 4px 6px; font-variant-numeric: tabular-nums; }
 table.rc td:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 table.rc .muted { font-size: 12px; }
 .link { word-break: break-all; font: 400 12px/1.5 var(--mono); background: var(--tile); border-radius: 10px; padding: 10px; user-select: all; }
@@ -292,7 +303,7 @@ function askOut(name) {
   if (b.getAttribute('data-arm')) { logout(''); return; }
   b.setAttribute('data-arm', '1'); b.textContent = '한 번 더 누르면 지웁니다';
   var n = document.createElement('div'); n.className = 'note'; n.id = 'out-note';
-  n.textContent = '이 기기에 저장된 본인 확인(' + name + '님)을 지웁니다. 다른 직원이 같은 휴대폰·PC를 쓰거나 다른 사람 이름으로 열렸을 때 누릅니다. 지우면 회사 메일 인증을 다시 합니다.';
+  n.textContent = '이 기기에 저장된 본인 확인(' + name + '님)을 지웁니다. 다른 직원이 같은 휴대폰·PC를 쓰거나 다른 사람 이름으로 열렸을 때 누릅니다. 지우면 메일 인증을 다시 합니다.';
   $('hbtn').appendChild(n);
   setTimeout(function () { var x = $('b-out'); if (x && x.getAttribute('data-arm')) { x.removeAttribute('data-arm'); x.textContent = '다른 사람'; } var o = $('out-note'); if (o) o.remove(); }, 6000);
 }
@@ -300,9 +311,9 @@ function logout(msg) { try { if (/[#?&]k=/.test(location.href)) history.replaceS
 function showAuth(msg) {
   $('app').innerHTML =
     '<div class="blk"><h3>본인 확인</h3>' +
-    '<div class="hint" style="margin-top:0">처음 한 번만 합니다. 회사 이메일로 인증번호를 보내 드립니다.</div>' +
+    '<div class="hint" style="margin-top:0">처음 한 번만 합니다. 회사 이메일로 인증번호를 보내 드립니다. 회사 이메일이 없으면 회계인사팀에 등록한 이메일을 적어 주세요.</div>' +
     (msg ? '<div class="msg err">' + esc(msg) + '</div>' : '') +
-    '<label class="f">회사 이메일</label><input id="a-em" type="email" autocomplete="email" placeholder="이름@회사도메인">' +
+    '<label class="f">이메일</label><input id="a-em" type="email" autocomplete="email" placeholder="이름@회사도메인">' +
     '<button class="pri" id="a-send">인증번호 받기</button>' +
     '<div id="a-step2" class="hidden"><label class="f">인증번호 6자리</label><input id="a-code" type="tel" inputmode="numeric" maxlength="6" autocomplete="one-time-code">' +
     '<button class="pri" id="a-ok">확인</button></div><div id="a-msg" class="msg"></div></div>';
@@ -366,6 +377,7 @@ function slotBox(kind, max, title, help) { return block(title, '<div class="slot
 function render(scroll) {
   if (!D) return;
   var h = '', O = D.opt, stop = false;
+  if (S.replace) h += '<div class="blk redo"><h3>' + esc(S.replace) + ' 고쳐서 다시 내기</h3><div class="hint" style="margin-top:0">고칠 곳만 [변경]해서 제출하면 새 접수번호로 들어가고, 원래 건은 취소됩니다.</div><button type="button" class="sbtn" id="redo-stop">그만두기</button></div>';
   var step = function (key, title, answer, full) {
     if (stop) return;
     if (answer && S.edit !== key) {
@@ -385,7 +397,7 @@ function render(scroll) {
   var kinds = [['LUNCH', '점심 식대 (식대카드)'], ['OTHER', '그 밖의 경비']];
   step('kind', '영수증', S.kind ? pickTitle(kinds, S.kind) : '', function () { return block('영수증 종류를 골라 주세요', choices('kind', kinds) + hint('영수증 1장은 1번 제출합니다.')); });
   if (S.kind === 'LUNCH') {
-    photo('receipt', 1, '점심 영수증 사진', '사진만 올리면 결제일·금액·카드는 자동으로 판독합니다.');
+    photo('receipt', 1, '점심 영수증 사진', '사진만 올리면 결제일·금액·카드는 자동으로 판독합니다. 손가락이 글자를 가리지 않게 찍어 주세요. 나눠 결제한 영수증은 다른 사람 결제 부분을 접어서 찍어도 됩니다.');
     if (!stop) { h += submitBlock(); stop = true; }
   } else if (S.kind === 'OTHER') {
     step('pay', '결제수단', S.pay, function () { return block('결제수단을 골라 주세요', choices('pay', D.pay.map(function (p) { return [p, p]; })) + hint('금액은 영수증에서 자동으로 읽습니다.')); });
@@ -399,7 +411,7 @@ function render(scroll) {
       if (S.shop === O.SHOP_ONLINE) photo('order', D.max.order, '주문내역 사진', D.help.order);
     }
     if (S.pay === '개인송금') photo('transfer', 1, '이체증 사진', D.help.transfer);
-    if (S.pay) photo('receipt', D.max.receipt, '영수증 사진', '카드전표·영수증 전체가 보이게 찍어 주세요. 긴 영수증은 여러 장으로 나눠 올려도 됩니다(최대 ' + D.max.receipt + '장).');
+    if (S.pay) photo('receipt', D.max.receipt, '영수증 사진', '카드전표·영수증 전체가 보이게, 손가락이 글자를 가리지 않게 찍어 주세요. 다른 영수증이 같이 찍히지 않게 해 주세요. 긴 영수증은 여러 장으로 나눠 올려도 됩니다(최대 ' + D.max.receipt + '장).');
     if (S.pay) step('group', '비용 종류', S.group ? lab(S.group) : '', function () { return block('비용 종류를 골라 주세요', choices('group', D.groups.map(function (x) { return [x.name, lab(x.name)]; }))); });
     var g = D.groups.filter(function (x) { return x.name === S.group; })[0];
     if (g) step('cat', '분류', S.cat, function () { return block('분류를 골라 주세요', choices('cat', g.cats.map(function (x) { return [x, x]; })) + hint(g.help)); });
@@ -480,13 +492,47 @@ function submitBlock() {
     '<label class="f">메모 <span class="muted">(선택 — 회계인사팀에 남길 말)</span></label><textarea id="memo" data-memo="1"' + (S.asPast ? ' placeholder="AS 한 현장 이름을 적어 주세요 (예: ○○아파트 101동)"' : '') + '>' + esc(S.memo) + '</textarea>' +
     '<button class="pri" id="go" type="button">제출</button><div id="go-msg" class="msg"></div></div>';
 }
+// 제출 내역(11/18): 이번 달·지난달 × 점심 식대/그 외 경비 × 결제일/접수일 기준 — 서버에서 한 번 받은 목록으로 화면에서만 바꿈
+var HV = { m: 0, kind: '', basis: load('hbasis') === 'at' ? 'at' : 'paid' };
+function monLabel(ym) { return Number(String(ym).slice(5, 7)) + '월'; }
+function rcRow(r, dt) {
+  return '<tr' + (r.canEdit ? ' class="has-act"' : '') + '><td>' + esc(dt) + '<br><span class="muted">' + esc(r.no) + '</span></td><td>' + (r.lunch ? esc(r.merchant || '판독 전') : esc(r.cat) + (r.merchant ? '<br><span class="muted">' + esc(r.merchant) + '</span>' : '')) + '</td><td>' + (r.total != null ? won(r.total) + '원<br>' : '') + esc(r.status) + '</td></tr>' +
+    (r.canEdit ? '<tr class="act"><td colspan="3"><button type="button" class="sbtn" data-redo="' + esc(r.no) + '">고쳐서 다시 내기</button><button type="button" class="sbtn" data-cancel="' + esc(r.no) + '">취소</button><div class="msg err" id="rcm-' + esc(r.no) + '"></div></td></tr>' : '');
+}
 function renderRecent() {
   var el = $('recent'); if (!el || !D) return;
-  if (!D.recent || !D.recent.length) { el.innerHTML = ''; return; }
-  el.innerHTML = block('최근 제출', '<table class="rc">' + D.recent.map(function (r) {
-    return '<tr><td>' + esc(r.at) + '<br><span class="muted">' + esc(r.no) + '</span></td><td>' + esc(r.cat) + (r.merchant ? '<br><span class="muted">' + esc(r.merchant) + '</span>' : '') + '</td><td>' + (r.total != null ? won(r.total) + '원<br>' : '') + esc(r.status) + '</td></tr>';
-  }).join('') + '</table>');
+  var H = D.history;
+  if (!H) { // 예전 서버(최근 10건만 줌)
+    if (!D.recent || !D.recent.length) { el.innerHTML = ''; return; }
+    el.innerHTML = block('최근 제출', '<table class="rc">' + D.recent.map(function (r) { return rcRow(r, r.at); }).join('') + '</table>' + (D.recent.some(function (r) { return r.canEdit; }) ? hint('제출한 달 말까지 취소하거나 고쳐서 다시 낼 수 있습니다.') : ''));
+    return;
+  }
+  if (!H.length) { el.innerHTML = ''; return; }
+  if (!HV.kind) HV.kind = H[0].lunch ? 'L' : 'O';
+  var ym = (D.months || [])[HV.m] || '', paidB = HV.basis === 'paid';
+  var key = function (r) { return paidB && r.paid ? r.paid : r.ts; };
+  var list = H.filter(function (r) { return (HV.kind === 'L') === !!r.lunch && key(r).slice(0, 7) === ym; })
+    .sort(function (a, b) { return key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0; }); // 같은 시각이면 서버 순서(최근 접수 먼저) 그대로
+  var live = list.filter(function (r) { return r.status !== '취소' && r.status !== '반려'; });
+  var sum = live.reduce(function (t, r) { return t + (Number(r.total) || 0); }, 0);
+  var seg = function (k, opts) { return '<div class="seg two hseg">' + opts.map(function (o) { return '<button type="button" data-h="' + k + '" data-v="' + o[0] + '" aria-pressed="' + (String(HV[k]) === String(o[0])) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div>'; };
+  var h = seg('m', [[0, '이번 달 (' + monLabel(D.months[0]) + ')'], [1, '지난달 (' + monLabel(D.months[1]) + ')']]) +
+    seg('kind', [['L', '점심 식대'], ['O', '그 외 경비']]) +
+    '<div class="hbasis"><span class="muted">기준</span>' + ['paid', 'at'].map(function (b) { return '<button type="button" class="sbtn" data-h="basis" data-v="' + b + '" aria-pressed="' + (HV.basis === b) + '">' + (b === 'paid' ? '결제일' : '접수일') + '</button>'; }).join('') + '</div>' +
+    '<div class="hsum" id="hsum">' + live.length + '건' + (live.length ? ' · 합계 ' + won(sum) + '원' : '') + (list.length > live.length ? ' <span class="muted">(취소·반려 ' + (list.length - live.length) + '건 빼고)</span>' : '') + '</div>';
+  h += list.length ? '<table class="rc">' + list.map(function (r) { return rcRow(r, paidB ? (r.paid ? '결제 ' + r.paid.slice(5, 10) : '접수 ' + r.at.slice(0, 5)) : r.at); }).join('') + '</table>'
+    : '<div class="hint">' + monLabel(ym) + '에 ' + (paidB ? '결제한' : '낸') + ' ' + (HV.kind === 'L' ? '점심 식대' : '그 외 경비') + ' 영수증이 없습니다.</div>';
+  h += hint('이번 달과 지난달 내역만 볼 수 있습니다.' + (list.some(function (r) { return r.canEdit; }) ? ' 제출한 달 말까지 취소하거나 고쳐서 다시 낼 수 있습니다.' : '') +
+    (paidB ? ' 결제일 기준: 판독 전이거나 결제일을 읽지 못한 건은 접수일로 보입니다.' : ''));
+  el.innerHTML = block('제출 내역', h);
 }
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('button[data-h]'); if (!b || !D) return;
+  var k = b.getAttribute('data-h'), v = b.getAttribute('data-v');
+  HV[k] = k === 'm' ? Number(v) : v;
+  if (k === 'basis') store('hbasis', v);
+  renderRecent();
+});
 
 // ---------- 고르기·입력 ----------
 var RESET = { kind: ['pay', 'card', 'shop', 'group', 'cat', 'use', 'ksite', 'site', 'place', 'showAll'], pay: ['card', 'shop'], group: ['cat'], cat: ['use', 'ksite', 'site', 'place', 'showAll'], use: ['site', 'place', 'showAll'], ksite: ['site', 'showAll'] };
@@ -526,6 +572,39 @@ document.addEventListener('input', function (ev) {
   if (t.hasAttribute('data-memo')) S.memo = t.value;
 });
 document.addEventListener('click', function (ev) { if (ev.target && ev.target.id === 'go') submit(); });
+// 최근 제출: [취소]는 6초 안에 한 번 더 눌러야 확정(브라우저 알림창 안 씀) / [고쳐서 다시 내기]는 그 건 값·사진을 채운 제출 화면
+document.addEventListener('click', function (ev) {
+  var t = ev.target; if (!t || !t.getAttribute || !D) return;
+  if (t.id === 'redo-stop') { S = blank(); render(); window.scrollTo(0, 0); return; }
+  var no = t.getAttribute('data-cancel'), m;
+  if (no) {
+    if (!t.getAttribute('data-arm')) {
+      t.setAttribute('data-arm', '1'); t.textContent = '한 번 더 누르면 취소';
+      setTimeout(function () { if (t.getAttribute('data-arm') && !t.disabled) { t.removeAttribute('data-arm'); t.textContent = '취소'; } }, 6000); return;
+    }
+    t.disabled = true; t.textContent = '취소하는 중…';
+    call('cancelReceipt', TOKEN, no).then(function (r) { D.recent = r.recent; if (r.history) { D.history = r.history; D.months = r.months; } if (S && S.replace === no) { S = blank(); render(); } renderRecent(); })
+      .catch(function (e) { t.disabled = false; t.removeAttribute('data-arm'); t.textContent = '취소'; m = $('rcm-' + no); if (m) m.textContent = e.message; });
+    return;
+  }
+  no = t.getAttribute('data-redo');
+  if (no) {
+    t.disabled = true; t.textContent = '불러오는 중…';
+    call('getReceiptForEdit', TOKEN, no).then(function (st) { t.disabled = false; t.textContent = '고쳐서 다시 내기'; loadForEdit(st); window.scrollTo(0, 0); })
+      .catch(function (e) { t.disabled = false; t.textContent = '고쳐서 다시 내기'; m = $('rcm-' + no); if (m) m.textContent = e.message; });
+  }
+});
+function loadForEdit(st) {
+  S = blank();
+  ['kind', 'pay', 'card', 'shop', 'group', 'cat', 'use', 'ksite', 'site', 'place', 'memo'].forEach(function (k) { S[k] = st[k] || ''; });
+  S.fields = st.fields || {}; S.asPast = !!st.asPast; S.replace = st.no;
+  ['receipt', 'order', 'transfer', 'photo'].forEach(function (k) {
+    S.files[k] = ((st.files || {})[k] || []).map(function (f) { return { lid: ++LID, name: f.name || '사진', status: 'done', id: f.id, url: f.thumb || '', pdf: !!f.pdf }; });
+  });
+  var spec = S.cat && D.cats[S.cat], page = spec && spec.page ? D.pages[spec.page] : null;
+  S.fieldsOk = !!(page && page.fields.every(function (f) { return !f.required || String(S.fields[f.name] || '').trim(); }));
+  render();
+}
 
 // ---------- 사진 ----------
 function paintSlot(kind) {
@@ -631,11 +710,12 @@ function submit() {
   if (m.length) { msg.className = 'msg err'; msg.textContent = '아직 입력하지 않은 항목: ' + m.join(', '); return; }
   S.sending = true; $('go').disabled = true;
   msg.className = 'msg'; msg.innerHTML = '<span class="spin"></span>제출하는 중입니다…';
-  var d = { kind: S.kind, pay: S.pay, card: S.card, shop: S.shop, group: S.group, cat: S.cat, fields: S.fields, use: S.use, ksite: S.ksite, site: S.site, place: S.place, memo: S.memo, asPast: !!S.asPast,
+  var d = { kind: S.kind, pay: S.pay, card: S.card, shop: S.shop, group: S.group, cat: S.cat, fields: S.fields, use: S.use, ksite: S.ksite, site: S.site, place: S.place, memo: S.memo, asPast: !!S.asPast, replace: S.replace || '',
     files: { receipt: ids('receipt'), order: ids('order'), transfer: ids('transfer'), photo: ids('photo') } };
   call('submitReceipt', TOKEN, d).then(function (r) {
     D.recent = r.recent; if (r.mySites) D.mySites = r.mySites;
-    $('form').innerHTML = '<div class="blk done"><div class="t">영수증을 접수했습니다</div><div class="no">' + esc(r.no) + '</div><div class="hint" style="margin-top:0">영수증 내용은 회계인사팀이 확인합니다. 보완이 필요하면 따로 안내드립니다.</div><button class="pri" id="again" type="button">다른 영수증 제출</button></div>';
+    if (r.history) { D.history = r.history; D.months = r.months; HV.kind = S.kind === 'LUNCH' ? 'L' : 'O'; HV.m = 0; } // 방금 낸 종류·이번 달로
+    $('form').innerHTML = '<div class="blk done"><div class="t">' + (r.replaced ? '고쳐서 다시 냈습니다' : '영수증을 접수했습니다') + '</div><div class="no">' + esc(r.no) + '</div><div class="hint" style="margin-top:0">' + (r.replaced ? '원래 건(' + esc(r.replaced) + ')은 취소했습니다. ' : '') + '영수증 내용은 회계인사팀이 확인합니다. 보완이 필요하면 따로 안내드립니다.</div><button class="pri" id="again" type="button">다른 영수증 제출</button></div>';
     $('again').onclick = function () { S = blank(); render(); window.scrollTo(0, 0); };
     renderRecent(); window.scrollTo(0, 0);
   }).catch(function (e) { S.sending = false; var g = $('go'); if (g) g.disabled = false; msg.className = 'msg err'; msg.textContent = e.message; });
